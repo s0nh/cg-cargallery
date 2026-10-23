@@ -1,0 +1,15 @@
+# Visual Studio
+.vs/
+x64/
+*.user
+imgui.ini
+
+# Build config is per-person (each teammate uses their own IDE)
+*.sln
+*.vcxproj
+*.vcxproj.filters
+CarGallery.props
+
+# GLFW is a per-OS binary: each teammate installs it locally
+external/lib/
+external/include/GLFW/
