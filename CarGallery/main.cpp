@@ -1,11 +1,29 @@
-// Build check only: opens a window and draws one ImGui window. Replace with the real skeleton.
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include "InitShader.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include <iostream>
+#include "Camera.h"
+#include "Room.h"
+
+const unsigned int SCR_WIDTH = 1280;
+const unsigned int SCR_HEIGHT = 720;
+int fbWidth = SCR_WIDTH, fbHeight = SCR_HEIGHT;  // current framebuffer size, for the projection aspect
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void processInput(GLFWwindow* window, float dt);
+
+Camera camera(glm::vec3(0.0f, 1.7f, 5.0f));  // 1.7 = eye height
+
+// mouse state: the first event only records the position, otherwise the view jumps
+bool firstMouse = true;
+float lastX = SCR_WIDTH / 2.0f, lastY = SCR_HEIGHT / 2.0f;
 
 int main()
 {
@@ -14,7 +32,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "CarGallery", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "CarGallery", NULL, NULL);
     if (window == NULL) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -26,26 +44,53 @@ int main()
         return -1;
     }
 
+    // register our callbacks BEFORE ImGui init: ImGui chains to callbacks that already exist
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
-    glm::vec3 clearColor(0.1f, 0.1f, 0.12f);
+    GLuint program = InitShader("vshader.glsl", "fshader.glsl");
+    GLint viewLoc = glGetUniformLocation(program, "view");
+    GLint projLoc = glGetUniformLocation(program, "projection");
+
+    Room room(40.0f, 10.0f, 24.0f, program);  // width (x), height, depth (z) in meters
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);  // a room face with the wrong winding disappears, so mistakes are visible
+
+    float lastFrame = 0.0f;
     while (!glfwWindowShouldClose(window)) {
+        float now = (float)glfwGetTime();
+        float dt = now - lastFrame;
+        lastFrame = now;
+
         glfwPollEvents();
+        processInput(window, dt);
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        ImGui::Begin("Build check");
-        ImGui::Text("OpenGL %s", (const char*)glGetString(GL_VERSION));
-        ImGui::ColorEdit3("clear", &clearColor.x);
+        ImGui::Begin("Camera");
+        ImGui::Text("pos   %.2f %.2f %.2f", camera.position.x, camera.position.y, camera.position.z);
+        ImGui::Text("yaw   %.1f", camera.yaw);
+        ImGui::Text("pitch %.1f", camera.pitch);
         ImGui::End();
         ImGui::Render();
 
-        glClearColor(clearColor.r, clearColor.g, clearColor.b, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClearColor(0.1f, 0.1f, 0.12f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glUseProgram(program);
+        glm::mat4 projMat = glm::perspective(glm::radians(60.0f), (float)fbWidth / fbHeight, 0.1f, 100.0f);
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(camera.getViewMatrix()));
+        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projMat));
+        room.draw(program);
+
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
     }
@@ -55,4 +100,43 @@ int main()
     ImGui::DestroyContext();
     glfwTerminate();
     return 0;
+}
+
+// held keys are polled every frame (a key callback only fires on press/repeat, so movement would stutter)
+void processInput(GLFWwindow* window, float dt)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+
+    float forward = 0.0f, right = 0.0f;
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) forward += 1.0f;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) forward -= 1.0f;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) right += 1.0f;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) right -= 1.0f;
+    bool sprint = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
+    camera.move(forward, right, sprint ? dt * 2.0f : dt);
+}
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    if (firstMouse) {
+        lastX = (float)xpos;
+        lastY = (float)ypos;
+        firstMouse = false;
+    }
+    float dx = (float)xpos - lastX;
+    float dy = lastY - (float)ypos;  // screen y grows downward, so flip it
+    lastX = (float)xpos;
+    lastY = (float)ypos;
+    camera.rotate(dx, dy);
+}
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    glViewport(0, 0, width, height);
+    // minimizing gives 0x0; keep the old size so the aspect ratio never divides by zero
+    if (width > 0 && height > 0) {
+        fbWidth = width;
+        fbHeight = height;
+    }
 }
