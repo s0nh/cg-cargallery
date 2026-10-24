@@ -8,8 +8,12 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include <iostream>
+#include <vector>
 #include "Camera.h"
 #include "Room.h"
+#include "Pedestal.h"
+#include "Car.h"
+#include "CustomizePanel.h"
 
 const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
@@ -17,6 +21,7 @@ int fbWidth = SCR_WIDTH, fbHeight = SCR_HEIGHT;  // current framebuffer size, fo
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void processInput(GLFWwindow* window, float dt);
 
 Camera camera(glm::vec3(0.0f, 1.7f, 5.0f));  // 1.7 = eye height
@@ -24,6 +29,9 @@ Camera camera(glm::vec3(0.0f, 1.7f, 5.0f));  // 1.7 = eye height
 // mouse state: the first event only records the position, otherwise the view jumps
 bool firstMouse = true;
 float lastX = SCR_WIDTH / 2.0f, lastY = SCR_HEIGHT / 2.0f;
+
+// Tab toggles UI mode: the cursor is freed so ImGui can be clicked, and the view stops turning
+bool uiMode = false;
 
 int main()
 {
@@ -47,6 +55,7 @@ int main()
     // register our callbacks BEFORE ImGui init: ImGui chains to callbacks that already exist
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetKeyCallback(window, key_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     IMGUI_CHECKVERSION();
@@ -59,6 +68,17 @@ int main()
     GLint projLoc = glGetUniformLocation(program, "projection");
 
     Room room(40.0f, 10.0f, 24.0f, program);  // width (x), height, depth (z) in meters
+
+    Pedestal pedestal(glm::vec3(0.0f), 3.0f, 0.3f, program);  // center of the hall, radius 3 m, 30 cm high
+    // all 5 cars stand on the same pedestal; the Customize panel picks which one is shown.
+    // arguments: name, OBJ file (made by tools/gltf2obj.py), paint material name, where to stand, real length (m)
+    std::vector<Car> cars;
+    cars.emplace_back("Lamborghini Countach", "assets/cars/countach.obj", "Body", pedestal.top(), 4.3f, program);
+    cars.emplace_back("Tesla Roadster", "assets/cars/roadster.obj", "car_main_paint", pedestal.top(), 4.6f, program);
+    cars.emplace_back("Mercedes-Benz S65", "assets/cars/s65.obj", "sw222_paint", pedestal.top(), 5.1f, program);
+    cars.emplace_back("Jeep Gladiator", "assets/cars/gladiator.obj", "Jeep_GladiatorRewardRecycled_2019Paint_Material", pedestal.top(), 5.5f, program);
+    cars.emplace_back("Kia Optima K5", "assets/cars/optima.obj", "insta_ua1k.006", pedestal.top(), 4.9f, program);
+    CustomizePanel customizePanel;
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);  // a room face with the wrong winding disappears, so mistakes are visible
@@ -80,6 +100,7 @@ int main()
         ImGui::Text("yaw   %.1f", camera.yaw);
         ImGui::Text("pitch %.1f", camera.pitch);
         ImGui::End();
+        customizePanel.draw(cars);
         ImGui::Render();
 
         glClearColor(0.1f, 0.1f, 0.12f, 1.0f);
@@ -90,6 +111,8 @@ int main()
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(camera.getViewMatrix()));
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projMat));
         room.draw(program);
+        pedestal.draw(program);
+        cars[customizePanel.selected()].draw(program);
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
@@ -117,8 +140,18 @@ void processInput(GLFWwindow* window, float dt)
     camera.move(forward, right, sprint ? dt * 2.0f : dt);
 }
 
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
+        uiMode = !uiMode;
+        glfwSetInputMode(window, GLFW_CURSOR, uiMode ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+        firstMouse = true;  // the cursor jumps when the mode changes; don't turn that jump into a rotation
+    }
+}
+
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
+    if (uiMode) return;
     if (firstMouse) {
         lastX = (float)xpos;
         lastY = (float)ypos;

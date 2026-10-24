@@ -13,3 +13,6 @@ CarGallery.props
 # GLFW is a per-OS binary: each teammate installs it locally
 external/lib/
 external/include/GLFW/
+
+# Linux build output (g++ -o CarGallery/CarGallery)
+/CarGallery/CarGallery
