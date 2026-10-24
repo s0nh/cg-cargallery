@@ -1,0 +1,5 @@
+root = true
+
+# keep Korean comments readable in every IDE (Visual Studio defaults to CP949 otherwise)
+[*.{cpp,h,c,glsl,md}]
+charset = utf-8
