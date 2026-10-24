@@ -5,7 +5,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 Car::Car(const std::string& name, const std::string& objPath, const std::string& paintMaterial,
-         glm::vec3 standOn, float length, GLuint program)
+         glm::vec3 standOn, float yawDegrees, float length, GLuint program)
     : name(name), paintMaterial(paintMaterial)
 {
     if (!obj.load(objPath)) return;
@@ -14,11 +14,12 @@ Car::Car(const std::string& name, const std::string& objPath, const std::string&
 
     // downloaded models come in any unit and origin: scale the longer side (x or z) to `length`
     // meters, and put the bottom center of the bounding box on standOn.
-    // read right to left: center at origin -> scale -> move onto the stand
+    // read right to left: center at origin -> scale -> turn -> move onto the stand
     glm::vec3 size = obj.bboxMax - obj.bboxMin;
     glm::vec3 bottomCenter((obj.bboxMin.x + obj.bboxMax.x) / 2, obj.bboxMin.y, (obj.bboxMin.z + obj.bboxMax.z) / 2);
     float scale = length / glm::max(size.x, size.z);
     model = glm::translate(glm::mat4(1.0f), standOn)
+          * glm::rotate(glm::mat4(1.0f), glm::radians(yawDegrees), glm::vec3(0, 1, 0))
           * glm::scale(glm::mat4(1.0f), glm::vec3(scale))
           * glm::translate(glm::mat4(1.0f), -bottomCenter);
 }

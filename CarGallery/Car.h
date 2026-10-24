@@ -19,9 +19,10 @@ public:
     CarConfig config;
 
     // paintMaterial: name of the OBJ material ("usemtl") that is the body paint
+    // yawDegrees: turn around the vertical axis (0 = front faces +z)
     // length: real length of the car in meters; the model is scaled to it
     Car(const std::string& name, const std::string& objPath, const std::string& paintMaterial,
-        glm::vec3 standOn, float length, GLuint program);
+        glm::vec3 standOn, float yawDegrees, float length, GLuint program);
 
     bool loaded() const { return !obj.parts.empty(); }
     void draw(GLuint program) const;

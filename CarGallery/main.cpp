@@ -69,15 +69,30 @@ int main()
 
     Room room(40.0f, 10.0f, 24.0f, program);  // width (x), height, depth (z) in meters
 
-    Pedestal pedestal(glm::vec3(0.0f), 3.0f, 0.3f, program);  // center of the hall, radius 3 m, 30 cm high
-    // all 5 cars stand on the same pedestal; the Customize panel picks which one is shown.
-    // arguments: name, OBJ file (made by tools/gltf2obj.py), paint material name, where to stand, real length (m)
+    // one pedestal per car, in a row across the hall (radius 3 m, 30 cm high, 7.5 m apart)
+    std::vector<Pedestal> pedestals;
+    for (int i = 0; i < 5; i++)
+        pedestals.emplace_back(glm::vec3(-15.0f + 7.5f * i, 0.0f, -4.0f), 3.0f, 0.3f, program);
+
+    // arguments: name, OBJ file (made by tools/gltf2obj.py), paint material name, where to stand,
+    // turn in degrees (30 = front turned toward +x, so the visitor sees front and side), real length (m)
     std::vector<Car> cars;
-    cars.emplace_back("Lamborghini Countach", "assets/cars/countach.obj", "Body", pedestal.top(), 4.3f, program);
-    cars.emplace_back("Tesla Roadster", "assets/cars/roadster.obj", "car_main_paint", pedestal.top(), 4.6f, program);
-    cars.emplace_back("Mercedes-Benz S65", "assets/cars/s65.obj", "sw222_paint", pedestal.top(), 5.1f, program);
-    cars.emplace_back("Jeep Gladiator", "assets/cars/gladiator.obj", "Jeep_GladiatorRewardRecycled_2019Paint_Material", pedestal.top(), 5.5f, program);
-    cars.emplace_back("Kia Optima K5", "assets/cars/optima.obj", "insta_ua1k.006", pedestal.top(), 4.9f, program);
+    cars.emplace_back("Lamborghini Countach", "assets/cars/countach.obj", "lLamborghini_CountachLPI8004_2022Paint_Material1", pedestals[0].top(), 30.0f, 4.9f, program);
+    cars.emplace_back("Tesla Roadster", "assets/cars/roadster.obj", "car_main_paint", pedestals[1].top(), 30.0f, 4.6f, program);
+    cars.emplace_back("Mercedes-Benz S65", "assets/cars/s65.obj", "sw222_paint", pedestals[2].top(), 30.0f, 5.1f, program);
+    cars.emplace_back("Jeep Gladiator", "assets/cars/gladiator.obj", "Jeep_GladiatorRewardRecycled_2019Paint_Material", pedestals[3].top(), 30.0f, 5.5f, program);
+    cars.emplace_back("Kia Optima K5", "assets/cars/optima.obj", "insta_ua1k.006", pedestals[4].top(), 30.0f, 4.9f, program);
+
+    // starting paint, left to right in rainbow order; the Customize panel can change each one
+    const glm::vec3 rainbow[5] = {
+        glm::vec3(0.85f, 0.10f, 0.10f),  // red
+        glm::vec3(0.95f, 0.45f, 0.05f),  // orange
+        glm::vec3(0.95f, 0.80f, 0.10f),  // yellow
+        glm::vec3(0.15f, 0.60f, 0.20f),  // green
+        glm::vec3(0.10f, 0.30f, 0.90f),  // blue
+    };
+    for (int i = 0; i < 5; i++)
+        cars[i].config.bodyColor = rainbow[i];
     CustomizePanel customizePanel;
 
     glEnable(GL_DEPTH_TEST);
@@ -111,8 +126,8 @@ int main()
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(camera.getViewMatrix()));
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projMat));
         room.draw(program);
-        pedestal.draw(program);
-        cars[customizePanel.selected()].draw(program);
+        for (const Pedestal& p : pedestals) p.draw(program);
+        for (const Car& car : cars) car.draw(program);
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);

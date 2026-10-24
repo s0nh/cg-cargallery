@@ -10,7 +10,7 @@
 struct ObjPart
 {
     std::string material;           // e.g. "car_main_paint", "Glass_Clear", "Thread"
-    std::unique_ptr<TriMesh> mesh;  // unique_ptr: parts are moved around in a vector
+    std::unique_ptr<TriMesh> mesh;  // this part's triangles; Car uploads them to the GPU
 };
 
 // Minimal OBJ reader: v, vn, f, usemtl. Portable rewrite of the practice CObjLoader,

@@ -1,11 +1,11 @@
 Model Information:
-* title:	Free Lamborghini Countach 2021
-* source:	https://sketchfab.com/3d-models/free-lamborghini-countach-2021-cf4e16b74ef7499abbdf591c665fc0ee
-* author:	Desiccated_Lemon (https://sketchfab.com/Desiccated_Lemon)
+* title:	2022 Lamborghini Countach LPI 800-4
+* source:	https://sketchfab.com/3d-models/2022-lamborghini-countach-lpi-800-4-49eade6528b942e4aea561c408072939
+* author:	Ddiaz Design (https://sketchfab.com/ddiaz-design)
 
 Model License:
 * license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
 * requirements:	Author must be credited. Commercial use is allowed.
 
 If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
-This work is based on "Free Lamborghini Countach 2021" (https://sketchfab.com/3d-models/free-lamborghini-countach-2021-cf4e16b74ef7499abbdf591c665fc0ee) by Desiccated_Lemon (https://sketchfab.com/Desiccated_Lemon) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+This work is based on "2022 Lamborghini Countach LPI 800-4" (https://sketchfab.com/3d-models/2022-lamborghini-countach-lpi-800-4-49eade6528b942e4aea561c408072939) by Ddiaz Design (https://sketchfab.com/ddiaz-design) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
