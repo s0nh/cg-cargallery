@@ -19,6 +19,7 @@
 | `W` `A` `S` `D` | 이동                |
 | 마우스             | 시점 회전             |
 | `E`             | 차량과 상호작용          |
+| `Tab`           | 마우스 커서 표시/숨김 (커스터마이징 창 조작) |
 | `Esc`           | 상호작용 종료 / 프로그램 종료 |
 
 
@@ -50,7 +51,13 @@
 
 | 에셋        | 출처  | 라이선스 |
 | --------- | --- | ---- |
-| (추가 시 기재) |     |      |
+| Lamborghini Countach LPI 800-4 2022 (`countach.obj`) | ["2022 Lamborghini Countach LPI 800-4"](https://sketchfab.com/3d-models/2022-lamborghini-countach-lpi-800-4-49eade6528b942e4aea561c408072939) by Ddiaz Design | CC BY 4.0 |
+| Tesla Roadster 2020 (`roadster.obj`) | ["Tesla Roadster 2020"](https://sketchfab.com/3d-models/tesla-roadster-2020-1fbf29e297bd4a17ac39a00a378441d8) by metarex.4d | CC BY 4.0 |
+| Mercedes-Benz S65 W222 (`s65.obj`) | ["Mersedes-Benz s65 w222"](https://sketchfab.com/3d-models/mersedes-benz-s65-w222-f42d9d13b0404b5b9a2302a4c590a94d) by Black Snow | CC BY 4.0 |
+| Jeep Gladiator 2020 (`gladiator.obj`) | ["2020 Jeep Gladiator"](https://sketchfab.com/3d-models/2020-jeep-gladiator-98bc399af1e948eda5db6d75c5bb649d) by Ddiaz Design | CC BY-NC-SA 4.0 |
+| Kia Optima K5 (`optima.obj`) | ["Kia optima k5"](https://sketchfab.com/3d-models/kia-optima-k5-6fc788c08348419d92588f2f541c5b50) by dannzjs | CC BY 4.0 |
+
+차량은 Sketchfab glTF를 `tools/gltf2obj.py`로 OBJ로 바꾼 것입니다. 모양(정점·법선·면)과 재질 이름만 남기고 색·텍스처는 버렸으며, 외관은 코드에서 직접 정합니다. 원본 라이선스 문구는 `CarGallery/assets/cars/*_license.txt`에 있습니다.
 
 
 ## 빌드
