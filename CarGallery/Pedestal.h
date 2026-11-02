@@ -13,10 +13,14 @@ public:
     // where a car should stand: center of the top face
     glm::vec3 top() const { return center + glm::vec3(0, height, 0); }
 
+    // push a walker (a circle of bodyRadius on the floor plan) out of the stand; only x/z change
+    glm::vec3 pushOut(glm::vec3 pos, float bodyRadius) const;
+
     void draw(GLuint program) const;
 
 private:
     glm::vec3 center;
+    float radius;
     float height;
     TriMesh mesh;
 };

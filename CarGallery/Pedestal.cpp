@@ -6,7 +6,7 @@
 static const int SEGMENTS = 64;  // more segments = rounder circle
 
 Pedestal::Pedestal(glm::vec3 center, float radius, float height, GLuint program)
-    : center(center), height(height)
+    : center(center), radius(radius), height(height)
 {
     // built around the origin; draw() moves it to center
     for (int i = 0; i < SEGMENTS; i++) {
@@ -32,6 +32,15 @@ Pedestal::Pedestal(glm::vec3 center, float radius, float height, GLuint program)
         }
     }
     mesh.upload(program);
+}
+
+glm::vec3 Pedestal::pushOut(glm::vec3 pos, float bodyRadius) const
+{
+    glm::vec2 d(pos.x - center.x, pos.z - center.z);
+    float dist = glm::length(d), minDist = radius + bodyRadius;
+    if (dist >= minDist || dist < 1e-5f) return pos;
+    d = d / dist * minDist;
+    return glm::vec3(center.x + d.x, pos.y, center.z + d.y);
 }
 
 void Pedestal::draw(GLuint program) const

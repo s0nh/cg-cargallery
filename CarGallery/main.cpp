@@ -24,7 +24,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void processInput(GLFWwindow* window, float dt);
 
-Camera camera(glm::vec3(0.0f, 1.7f, 5.0f));  // 1.7 = eye height
+Camera camera(glm::vec3(0.0f, 1.7f, 10.0f));  // 1.7 = eye height; near the open front of the hall, looking at the bays
 
 // mouse state: the first event only records the position, otherwise the view jumps
 bool firstMouse = true;
@@ -32,6 +32,9 @@ float lastX = SCR_WIDTH / 2.0f, lastY = SCR_HEIGHT / 2.0f;
 
 // Tab toggles UI mode: the cursor is freed so ImGui can be clicked, and the view stops turning
 bool uiMode = false;
+
+// the walker's size on the floor plan for collision: a circle this wide around the camera
+const float BODY_RADIUS = 0.3f;
 
 int main()
 {
@@ -67,21 +70,30 @@ int main()
     GLint viewLoc = glGetUniformLocation(program, "view");
     GLint projLoc = glGetUniformLocation(program, "projection");
 
-    Room room(40.0f, 10.0f, 24.0f, program);  // width (x), height, depth (z) in meters
+    // round hall: 14 m radius, 6 m to the flat ceiling.
+    // 5 bays 54 degrees apart around the back half (-90 = straight back); the front (+z) stays open
+    // as the entrance side. Listed left to right as seen from the entrance.
+    Room room(14.0f, 6.0f, { 162.0f, -144.0f, -90.0f, -36.0f, 18.0f }, program);
 
-    // one pedestal per car, in a row across the hall (radius 3 m, 30 cm high, 7.5 m apart)
+    // one pedestal per bay (radius 3 m, 30 cm high), in the middle of the bay's round end
     std::vector<Pedestal> pedestals;
-    for (int i = 0; i < 5; i++)
-        pedestals.emplace_back(glm::vec3(-15.0f + 7.5f * i, 0.0f, -4.0f), 3.0f, 0.3f, program);
+    for (const Bay& bay : room.bays())
+        pedestals.emplace_back(bay.center, 3.0f, 0.3f, program);
+
+    // each car faces the hall center, then turns 30 degrees more so the visitor sees front and side.
+    // a turn of y degrees points the car's front (+z) at (sin y, 0, cos y)
+    std::vector<float> carYaw;
+    for (const Bay& bay : room.bays())
+        carYaw.push_back(glm::degrees(atan2(bay.inward.x, bay.inward.z)) + 30.0f);
 
     // arguments: name, OBJ file (made by tools/gltf2obj.py), paint material name, where to stand,
-    // turn in degrees (30 = front turned toward +x, so the visitor sees front and side), real length (m)
+    // turn in degrees, real length (m)
     std::vector<Car> cars;
-    cars.emplace_back("Lamborghini Countach", "assets/cars/countach.obj", "lLamborghini_CountachLPI8004_2022Paint_Material1", pedestals[0].top(), 30.0f, 4.9f, program);
-    cars.emplace_back("Tesla Roadster", "assets/cars/roadster.obj", "car_main_paint", pedestals[1].top(), 30.0f, 4.6f, program);
-    cars.emplace_back("Mercedes-Benz S65", "assets/cars/s65.obj", "sw222_paint", pedestals[2].top(), 30.0f, 5.1f, program);
-    cars.emplace_back("Jeep Gladiator", "assets/cars/gladiator.obj", "Jeep_GladiatorRewardRecycled_2019Paint_Material", pedestals[3].top(), 30.0f, 5.5f, program);
-    cars.emplace_back("Kia Optima K5", "assets/cars/optima.obj", "insta_ua1k.006", pedestals[4].top(), 30.0f, 4.9f, program);
+    cars.emplace_back("Lamborghini Countach", "assets/cars/countach.obj", "lLamborghini_CountachLPI8004_2022Paint_Material1", pedestals[0].top(), carYaw[0], 4.9f, program);
+    cars.emplace_back("Tesla Roadster", "assets/cars/roadster.obj", "car_main_paint", pedestals[1].top(), carYaw[1], 4.6f, program);
+    cars.emplace_back("Mercedes-Benz S65", "assets/cars/s65.obj", "sw222_paint", pedestals[2].top(), carYaw[2], 5.1f, program);
+    cars.emplace_back("Jeep Gladiator", "assets/cars/gladiator.obj", "Jeep_GladiatorRewardRecycled_2019Paint_Material", pedestals[3].top(), carYaw[3], 5.5f, program);
+    cars.emplace_back("Kia Optima K5", "assets/cars/optima.obj", "insta_ua1k.006", pedestals[4].top(), carYaw[4], 4.9f, program);
 
     // starting paint, left to right in rainbow order; the Customize panel can change each one
     const glm::vec3 rainbow[5] = {
@@ -106,6 +118,11 @@ int main()
 
         glfwPollEvents();
         processInput(window, dt);
+
+        // collision after moving: out of the stands (and so the cars on them), then back inside the walls
+        for (const Pedestal& p : pedestals)
+            camera.position = p.pushOut(camera.position, BODY_RADIUS);
+        camera.position = room.collide(camera.position, BODY_RADIUS);
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
